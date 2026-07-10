@@ -1,7 +1,7 @@
 # agente-cotacoes
 Agente diário de cotações e notícias
 # Configuração Telegram (preencha depois)
-  # === CONFIGURAÇÃO TELEGRAM = 
+  
   # === CONFIGURAÇÃO TELEGRAM ===
     token = "8992452932:AAHk83jULYSjGkhgHnOZETLgWng6wmi2b54"
     chat_id = "978630915"
