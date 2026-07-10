@@ -1,0 +1,23 @@
+name: Relatório Diário
+
+on:
+  schedule:
+    - cron: '0 12 * * *'   # Todo dia às 09:00 BRT (12:00 UTC)
+  workflow_dispatch:       # Permite rodar manualmente
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+      
+      - name: Run script
+        run: python agente_cotacoes.py
