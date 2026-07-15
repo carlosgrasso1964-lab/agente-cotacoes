@@ -14,30 +14,52 @@ def get_cotacoes():
         'bitcoin': 'Indisponivel'
     }
     
-    # Adicionando User-Agent para evitar bloqueio (HTTP 429) no GitHub Actions
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     
+    # 1. Moedas (USD, EUR, GBP) via ExchangeRate-API (Altamente estavel no GitHub Actions)
     try:
-        # Cotacoes de moedas e Bitcoin via AwesomeAPI
-        url_moedas = "https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL,GBP-BRL,BTC-BRL"
-        response = requests.get(url_moedas, headers=headers, timeout=15)
+        url_cambio = "https://open.er-api.com/v6/latest/USD"
+        response = requests.get(url_cambio, headers=headers, timeout=15)
         
         if response.status_code == 200:
             res_json = response.json()
-            dados['dolar'] = f"R$ {float(res_json['USDBRL']['bid']):.2f}"
-            dados['euro'] = f"R$ {float(res_json['EURBRL']['bid']):.2f}"
-            dados['libra'] = f"R$ {float(res_json['GBPBRL']['bid']):.2f}"
-            dados['bitcoin'] = f"R$ {float(res_json['BTCBRL']['bid']):.2f}"
+            rates = res_json.get('rates', {})
+            
+            usd_brl = rates.get('BRL')
+            eur_usd = rates.get('EUR')
+            gbp_usd = rates.get('GBP')
+            
+            if usd_brl:
+                dados['dolar'] = f"R$ {usd_brl:.2f}"
+                # Calcula Euro e Libra baseados na proporcao do Dolar
+                if eur_usd:
+                    dados['euro'] = f"R$ {(usd_brl / eur_usd):.2f}"
+                if gbp_usd:
+                    dados['libra'] = f"R$ {(usd_brl / gbp_usd):.2f}"
+            else:
+                print("Erro: Nao foi possivel extrair a taxa de BRL da API.")
         else:
-            print(f"Erro na API de moedas. Status Code: {response.status_code}")
+            print(f"Erro na API de Cambio. Status: {response.status_code}")
     except Exception as e:
         print(f"Erro ao buscar moedas: {e}")
         
+    # 2. Bitcoin via Coinbase (API publica extremamente robusta)
     try:
-        dados['ibovespa'] = "Consulte Home Broker"
-        dados['ouro'] = "Consulte mercado futuro"
+        url_btc = "https://api.coinbase.com/v2/prices/BTC-BRL/spot"
+        response = requests.get(url_btc, headers=headers, timeout=15)
+        
+        if response.status_code == 200:
+            res_json = response.json()
+            btc_brl = float(res_json['data']['amount'])
+            dados['bitcoin'] = f"R$ {btc_brl:.2f}"
+        else:
+            print(f"Erro na API da Coinbase. Status: {response.status_code}")
     except Exception as e:
-        print(f"Erro ao buscar indices: {e}")
+        print(f"Erro ao buscar Bitcoin: {e}")
+        
+    # Indices estaticos/manuais
+    dados['ibovespa'] = "Consulte Home Broker"
+    dados['ouro'] = "Consulte mercado futuro"
 
     return dados
 
