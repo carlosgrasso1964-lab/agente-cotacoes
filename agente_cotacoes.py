@@ -1,21 +1,21 @@
+# -*- coding: utf-8 -*-
 import requests
 from bs4 import BeautifulSoup
 import datetime
 import os
 
 def get_cotacoes():
-    # Inicializa com valores padrão caso a API falhe
     dados = {
-        'ibovespa': 'Indisponível',
-        'dolar': 'Indisponível',
-        'euro': 'Indisponível',
-        'libra': 'Indisponível',
-        'ouro': 'Indisponível',
-        'bitcoin': 'Indisponível'
+        'ibovespa': 'Indisponivel',
+        'dolar': 'Indisponivel',
+        'euro': 'Indisponivel',
+        'libra': 'Indisponivel',
+        'ouro': 'Indisponivel',
+        'bitcoin': 'Indisponivel'
     }
     
     try:
-        # Cotações de moedas e Bitcoin via AwesomeAPI
+        # Cotacoes de moedas e Bitcoin via AwesomeAPI
         url_moedas = "https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL,GBP-BRL,BTC-BRL"
         response = requests.get(url_moedas, timeout=10)
         
@@ -29,11 +29,83 @@ def get_cotacoes():
         print(f"Erro ao buscar moedas: {e}")
         
     try:
-        # Exemplo para o Ibovespa (Usando uma alternativa pública ou scraping rápido)
-        # Como o Ibovespa não está na AwesomeAPI gratuita de forma direta, 
-        # você pode mantê-lo estático ou usar scraping. Para simplificar, deixaremos indicado:
         dados['ibovespa'] = "Consulte Home Broker"
         dados['ouro'] = "Consulte mercado futuro"
+    except Exception as e:
+        print(f"Erro ao buscar indices: {e}")
+
+    return dados
+
+def get_manchetes_locais():
+    manchetes = []
+    
+    try:
+        url = "https://www.jornalcruzeiro.com.br/"
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        response = requests.get(url, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            links = soup.find_all('a', href=True)
+            
+            cont = 0
+            for link in links:
+                texto = link.get_text().strip()
+                if len(texto) > 30 and cont < 3: 
+                    href = link['href']
+                    if not href.startswith('http'):
+                        href = url + href
+                    # Substituido o caractere especial por um hifen comum
+                    manchetes.append(f"- <a href='{href}'>{texto}</a>")
+                    cont += 1
+    except Exception as e:
+        print(f"Erro ao raspar Cruzeiro do Sul: {e}")
+        
+    if not manchetes:
+        manchetes = ["- Nao foi possivel carregar as manchetes atuais."]
+        
+    return manchetes
+
+if __name__ == "__main__":
+    hoje = datetime.date.today().strftime("%d/%m/%Y")
+    cot = get_cotacoes()
+    man = get_manchetes_locais()
+    
+    # Substituidos os marcadores especiais por emojis e hifens simples
+    relatorio = f"""📊 <b>Relatorio Diario - {hoje}</b>
+
+<b>COTACOES:</b>
+- Ibovespa: {cot['ibovespa']}
+- Dolar: {cot['dolar']}
+- Euro: {cot['euro']}
+- Libra: {cot['libra']}
+- Ouro: {cot['ouro']}
+- Bitcoin: {cot['bitcoin']}
+
+<b>NOTICIAS LOCAIS (Sorocaba):</b>
+{chr(10).join(man)}
+
+<b>Inflacao:</b> IPCA ~4,72% (12 meses)
+
+Atualizado automaticamente.
+"""
+    print(relatorio)
+    
+    # === CONFIGURACAO TELEGRAM ===
+    token = os.environ.get("TELEGRAM_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    
+    if token and chat_id:
+        try:
+            requests.post(
+                f"https://api.telegram.org/bot{token}/sendMessage",
+                json={"chat_id": chat_id, "text": relatorio, "parse_mode": "HTML"}
+            )
+            print("✅ Mensagem enviada para Telegram!")
+        except Exception as e:
+            print(f"Erro ao enviar: {e}")
+    else:
+        print("⚠️ Token ou chat_id nao configurados no ambiente.")
     except Exception as e:
         print(f"Erro ao buscar índices: {e}")
 
