@@ -14,10 +14,13 @@ def get_cotacoes():
         'bitcoin': 'Indisponivel'
     }
     
+    # Adicionando User-Agent para evitar bloqueio (HTTP 429) no GitHub Actions
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    
     try:
         # Cotacoes de moedas e Bitcoin via AwesomeAPI
         url_moedas = "https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL,GBP-BRL,BTC-BRL"
-        response = requests.get(url_moedas, timeout=10)
+        response = requests.get(url_moedas, headers=headers, timeout=15)
         
         if response.status_code == 200:
             res_json = response.json()
@@ -25,6 +28,8 @@ def get_cotacoes():
             dados['euro'] = f"R$ {float(res_json['EURBRL']['bid']):.2f}"
             dados['libra'] = f"R$ {float(res_json['GBPBRL']['bid']):.2f}"
             dados['bitcoin'] = f"R$ {float(res_json['BTCBRL']['bid']):.2f}"
+        else:
+            print(f"Erro na API de moedas. Status Code: {response.status_code}")
     except Exception as e:
         print(f"Erro ao buscar moedas: {e}")
         
@@ -41,8 +46,8 @@ def get_manchetes_locais():
     
     try:
         url = "https://www.jornalcruzeiro.com.br/"
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        response = requests.get(url, headers=headers, timeout=10)
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        response = requests.get(url, headers=headers, timeout=15)
         
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
@@ -55,7 +60,6 @@ def get_manchetes_locais():
                     href = link['href']
                     if not href.startswith('http'):
                         href = url + href
-                    # Substituido o caractere especial por um hifen comum
                     manchetes.append(f"- <a href='{href}'>{texto}</a>")
                     cont += 1
     except Exception as e:
@@ -71,7 +75,6 @@ if __name__ == "__main__":
     cot = get_cotacoes()
     man = get_manchetes_locais()
     
-    # Substituidos os marcadores especiais por emojis e hifens simples
     relatorio = f"""📊 <b>Relatorio Diario - {hoje}</b>
 
 <b>COTACOES:</b>
