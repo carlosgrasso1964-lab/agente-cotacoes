@@ -14,26 +14,49 @@ def get_cotacoes():
     }
     h = {'User-Agent': 'Mozilla/5.0'}
     
-    # Moedas e Bitcoin
+    # USD/BRL
     try:
-        r = requests.get("https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL,GBP-BRL,BTC-BRL", headers=h, timeout=15)
+        r = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/BRL%3DX?interval=1d&range=1d", headers=h, timeout=15)
         if r.status_code == 200:
-            d = r.json()
-            dados['dolar'] = f"R$ {float(d['USDBRL']['bid']):.2f}"
-            dados['euro'] = f"R$ {float(d['EURBRL']['bid']):.2f}"
-            dados['libra'] = f"R$ {float(d['GBPBRL']['bid']):.2f}"
-            dados['bitcoin'] = f"R$ {float(d['BTCBRL']['bid']):,.2f}"
-            dados['usd'] = float(d['USDBRL']['bid'])
+            usd = r.json()['chart']['result'][0]['meta']['regularMarketPrice']
+            dados['dolar'] = f"R$ {usd:.2f}"
+            dados['usd'] = usd
+    except: pass
+    
+    # EUR/BRL
+    try:
+        r = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/EURBRL%3DX?interval=1d&range=1d", headers=h, timeout=15)
+        if r.status_code == 200:
+            eur = r.json()['chart']['result'][0]['meta']['regularMarketPrice']
+            dados['euro'] = f"R$ {eur:.2f}"
+    except: pass
+    
+    # GBP/BRL
+    try:
+        r = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/GBPBRL%3DX?interval=1d&range=1d", headers=h, timeout=15)
+        if r.status_code == 200:
+            gbp = r.json()['chart']['result'][0]['meta']['regularMarketPrice']
+            dados['libra'] = f"R$ {gbp:.2f}"
+    except: pass
+    
+    # Bitcoin (BTC-USD + converte para BRL)
+    try:
+        r = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/BTC-USD?interval=1d&range=1d", headers=h, timeout=15)
+        if r.status_code == 200:
+            btc = r.json()['chart']['result'][0]['meta']['regularMarketPrice']
+            usd = dados.get('usd', 5.0)
+            dados['bitcoin'] = f"R$ {(btc * usd):,.2f}"
     except: pass
     
     # Ibovespa
     try:
         r = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/%5EBVSP?interval=1d&range=1d", headers=h, timeout=15)
         if r.status_code == 200:
-            dados['ibovespa'] = f"{r.json()['chart']['result'][0]['meta']['regularMarketPrice']:,.2f} pts"
+            ibov = r.json()['chart']['result'][0]['meta']['regularMarketPrice']
+            dados['ibovespa'] = f"{ibov:,.2f} pts"
     except: pass
     
-    # Ouro
+    # Ouro (GC=F USD + converte para BRL)
     try:
         r = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?interval=1d&range=1d", headers=h, timeout=15)
         if r.status_code == 200:
@@ -59,7 +82,7 @@ COTACOES:
 - Bitcoin: {cot['bitcoin']}
  
 Atualizado automaticamente."""
-    
+ 
     print(relatorio)
     
     token = os.environ.get("TELEGRAM_TOKEN")
