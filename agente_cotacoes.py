@@ -92,6 +92,9 @@ def get_noticias():
     
     # CNN Brasil
     noticias += buscar_rss("https://www.cnnbrasil.com.br/feed/", 2)
+
+    # Cruzeiro do Sul
+    noticias += buscar_rss("https://www.jornalcruzeiro.com.br/", 2)
     
     if not noticias:
         noticias = ["- Nao foi possivel carregar as noticias."]
