@@ -93,18 +93,45 @@ def get_noticias():
     # CNN Brasil
     noticias += buscar_rss("https://www.cnnbrasil.com.br/feed/", 2)
 
-    # Cruzeiro do Sul
-    noticias += buscar_rss("https://www.jornalcruzeiro.com.br/", 2)
-    
     if not noticias:
         noticias = ["- Nao foi possivel carregar as noticias."]
     
     return noticias
+
+def get_manchetes_locais():
+    manchetes = []
+    
+    try:
+        url = "https://www.jornalcruzeiro.com.br/"
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        response = requests.get(url, headers=headers, timeout=15)
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            links = soup.find_all('a', href=True)
+            
+            cont = 0
+            for link in links:
+                texto = link.get_text().strip()
+                if len(texto) > 30 and cont < 3: 
+                    href = link['href']
+                    if not href.startswith('http'):
+                        href = url + href
+                    manchetes.append(f"- <a href='{href}'>{texto}</a>")
+                    cont += 1
+    except Exception as e:
+        print(f"Erro ao raspar Cruzeiro do Sul: {e}")
+        
+    if not manchetes:
+        manchetes = ["- Nao foi possivel carregar as manchetes atuais."]
+        
+    return manchetes
  
 if __name__ == "__main__":
     hoje = datetime.date.today().strftime("%d/%m/%Y")
     cot = get_cotacoes()
     noticias = get_noticias()
+    man = get_manchetes_locais()
     
     relatorio = f"""📊 <b>Relatorio Diario - {hoje}</b>
  
@@ -118,6 +145,9 @@ if __name__ == "__main__":
  
 <b>NOTICIAS DO DIA:</b>
 {chr(10).join(noticias)}
+
+<b>NOTICIAS LOCAIS (Sorocaba):</b>
+{chr(10).join(man)}
  
 Atualizado automaticamente."""
  
