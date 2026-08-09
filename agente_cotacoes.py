@@ -3,7 +3,6 @@ import requests
 import datetime
 import os
 import xml.etree.ElementTree as ET
-from bs4 import BeautifulSoup
 
 def get_cotacoes():
     dados = {
@@ -97,51 +96,24 @@ def get_noticias():
     return noticias
 
 def get_manchetes_locais():
-    """Busca noticias de Sorocaba via RSS (G1 Sorocaba) e Web Scraping (Jornal Cruzeiro)"""
+    """Busca noticias de Sorocaba via Google News RSS (sempre atualizado)"""
     manchetes = []
     
-    # 1. RSS do G1 Sorocaba - adiciona parametro para evitar cache
-    rss_g1_sorocaba = f"https://g1.globo.com/rss/g1/sao-paulo/sorocaba-jundiai/?t={int(datetime.datetime.now().timestamp())}"
-    manchetes += buscar_rss(rss_g1_sorocaba, 3)
+    try:
+        url = "https://news.google.com/rss/search?q=Sorocaba&hl=pt-BR&gl=BR&ceid=BR:pt-419"
+        r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}, timeout=15)
+        if r.status_code == 200:
+            root = ET.fromstring(r.content)
+            for item in root.findall('.//item')[:4]:
+                titulo = item.findtext('title', '').strip()
+                link = item.findtext('link', '').strip()
+                if titulo:
+                    manchetes.append(f"- <a href='{link}'>{titulo[:100]}</a>")
+    except Exception as e:
+        print(f"Erro ao buscar noticias locais: {e}")
     
-    # 2. Se o RSS falhar, tenta raspagem do Jornal Cruzeiro do Sul
     if not manchetes:
-        try:
-            url = "https://www.jornalcruzeiro.com.br/"
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
-            }
-            response = requests.get(url, headers=headers, timeout=15)
-            
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.text, 'html.parser')
-                
-                # Busca especificamente em tags de artigo/noticia
-                artigos = soup.find_all(['article', 'h2', 'h3'])
-                
-                cont = 0
-                vistos = set()
-                for artigo in artigos:
-                    link_tag = artigo.find('a', href=True) if artigo.name != 'a' else artigo
-                    if link_tag:
-                        texto = link_tag.get_text().strip()
-                        href = link_tag.get('href', '')
-                        # Filtra: texto longo, com link valido, e nao repetido
-                        if len(texto) > 30 and href and texto not in vistos and cont < 3:
-                            if not href.startswith('http'):
-                                href = url.rstrip('/') + '/' + href.lstrip('/')
-                            # Ignora links de menu/categorias
-                            if '/noticia/' in href or '/materia/' in href or len(texto) > 50:
-                                manchetes.append(f"- <a href='{href}'>{texto[:100]}</a>")
-                                vistos.add(texto)
-                                cont += 1
-        except Exception as e:
-            print(f"Erro ao raspar Cruzeiro do Sul: {e}")
-            
-    if not manchetes:
-        manchetes = ["- Nao foi possivel carregar as manchetes atuais."]
+        manchetes = ["- Nao foi possivel carregar as manchetes locais."]
         
     return manchetes
 
