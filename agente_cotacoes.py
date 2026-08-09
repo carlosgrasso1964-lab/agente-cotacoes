@@ -100,30 +100,43 @@ def get_manchetes_locais():
     """Busca noticias de Sorocaba via RSS (G1 Sorocaba) e Web Scraping (Jornal Cruzeiro)"""
     manchetes = []
     
-    # 1. Tenta RSS do G1 Sorocaba e Jundiai (Muito estavel no GitHub)
-    rss_g1_sorocaba = "https://g1.globo.com/rss/g1/sao-paulo/sorocaba-jundiai/"
+    # 1. RSS do G1 Sorocaba - adiciona parametro para evitar cache
+    rss_g1_sorocaba = f"https://g1.globo.com/rss/g1/sao-paulo/sorocaba-jundiai/?t={int(datetime.datetime.now().timestamp())}"
     manchetes += buscar_rss(rss_g1_sorocaba, 3)
     
     # 2. Se o RSS falhar, tenta raspagem do Jornal Cruzeiro do Sul
     if not manchetes:
         try:
             url = "https://www.jornalcruzeiro.com.br/"
-            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            }
             response = requests.get(url, headers=headers, timeout=15)
             
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, 'html.parser')
-                links = soup.find_all('a', href=True)
+                
+                # Busca especificamente em tags de artigo/noticia
+                artigos = soup.find_all(['article', 'h2', 'h3'])
                 
                 cont = 0
-                for link in links:
-                    texto = link.get_text().strip()
-                    if len(texto) > 30 and cont < 3: 
-                        href = link['href']
-                        if not href.startswith('http'):
-                            href = url + href
-                        manchetes.append(f"- <a href='{href}'>{texto}</a>")
-                        cont += 1
+                vistos = set()
+                for artigo in artigos:
+                    link_tag = artigo.find('a', href=True) if artigo.name != 'a' else artigo
+                    if link_tag:
+                        texto = link_tag.get_text().strip()
+                        href = link_tag.get('href', '')
+                        # Filtra: texto longo, com link valido, e nao repetido
+                        if len(texto) > 30 and href and texto not in vistos and cont < 3:
+                            if not href.startswith('http'):
+                                href = url.rstrip('/') + '/' + href.lstrip('/')
+                            # Ignora links de menu/categorias
+                            if '/noticia/' in href or '/materia/' in href or len(texto) > 50:
+                                manchetes.append(f"- <a href='{href}'>{texto[:100]}</a>")
+                                vistos.add(texto)
+                                cont += 1
         except Exception as e:
             print(f"Erro ao raspar Cruzeiro do Sul: {e}")
             
@@ -131,6 +144,7 @@ def get_manchetes_locais():
         manchetes = ["- Nao foi possivel carregar as manchetes atuais."]
         
     return manchetes
+
 
 if __name__ == "__main__":
     hoje = datetime.date.today().strftime("%d/%m/%Y")
