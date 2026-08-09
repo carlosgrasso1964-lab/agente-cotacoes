@@ -184,3 +184,4 @@ Atualizado automaticamente."""
             print("Enviado para Telegram!")
         except Exception as e:
             print(f"Erro: {e}")
+
