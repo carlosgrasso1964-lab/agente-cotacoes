@@ -1,0 +1,13 @@
+# Dados gerados automaticamente (nao versionar)
+cotacoes_historico.xlsx
+graficos/
+
+# Python
+__pycache__/
+*.pyc
+
+# Arquivos de teste/descartaveis
+test.txt
+
+# Sempre manter o token FORA do controle de versao!
+# NUNCA commitar este arquivo se ele contiver o TELEGRAM_TOKEN
