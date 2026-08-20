@@ -9,5 +9,8 @@ __pycache__/
 # Arquivos de teste/descartaveis
 test.txt
 
+# NOVA: arquivo de segredos locais (NUNCA versionar)
+.env
+
 # Sempre manter o token FORA do controle de versao!
 # NUNCA commitar este arquivo se ele contiver o TELEGRAM_TOKEN
