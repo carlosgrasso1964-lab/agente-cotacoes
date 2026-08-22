@@ -1,14 +1,20 @@
 # -*- coding: utf-8 -*-
+"""Agente de Cotações — apenas cotações (sem notícias).
+
+- Busca cotações via Yahoo Finance
+- Grava na planilha acumulativa (cotacoes_historico.xlsx)
+- NÃO busca notícias (isso agora é o journal.py separado)
+"""
 import requests
 import datetime
 import os
-import xml.etree.ElementTree as ET
 from openpyxl import Workbook, load_workbook
 
 ARQUIVO_PLANILHA = "cotacoes_historico.xlsx"
 
 
 def get_cotacoes():
+    """Busca cotações atuais e retorna (dados_formatados, numeros_crus)."""
     dados = {
         'ibovespa': 'Indisponivel',
         'dolar': 'Indisponivel',
@@ -122,99 +128,13 @@ def gravar_historico(numeros):
         print(f"Erro ao gravar historico: {e}")
 
 
-def buscar_rss(url, limite=3):
-    """Busca noticias de um feed RSS e retorna lista de titulos com links"""
-    noticias = []
-    try:
-        r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}, timeout=15)
-        if r.status_code == 200:
-            root = ET.fromstring(r.content)
-            for item in root.findall('.//item')[:limite]:
-                titulo = item.findtext('title', '').strip()
-                link = item.findtext('link', '').strip()
-                if titulo:
-                    noticias.append(f"- <a href='{link}'>{titulo[:100]}</a>")
-    except Exception as e:
-        print(f"Erro ao buscar RSS ({url}): {e}")
-    return noticias
-
-
-def get_noticias():
-    """Busca noticias do G1 Nacional e CNN Brasil"""
-    noticias = []
-    noticias += buscar_rss("https://g1.globo.com/rss/g1/", 2)
-    noticias += buscar_rss("https://www.cnnbrasil.com.br/feed/", 2)
-
-    if not noticias:
-        noticias = ["- Nao foi possivel carregar as noticias."]
-
-    return noticias
-
-
-def get_manchetes_locais():
-    """Busca noticias de Sorocaba via Google News RSS (sempre atualizado)"""
-    manchetes = []
-
-    try:
-        url = "https://news.google.com/rss/search?q=Sorocaba&hl=pt-BR&gl=BR&ceid=BR:pt-419"
-        r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}, timeout=15)
-        if r.status_code == 200:
-            root = ET.fromstring(r.content)
-            for item in root.findall('.//item')[:4]:
-                titulo = item.findtext('title', '').strip()
-                link = item.findtext('link', '').strip()
-                if titulo:
-                    manchetes.append(f"- <a href='{link}'>{titulo[:100]}</a>")
-    except Exception as e:
-        print(f"Erro ao buscar noticias locais: {e}")
-
-    if not manchetes:
-        manchetes = ["- Nao foi possivel carregar as manchetes locais."]
-
-    return manchetes
-
-
 if __name__ == "__main__":
-    hoje = datetime.date.today().strftime("%d/%m/%Y")
     cot, numeros = get_cotacoes()
     gravar_historico(numeros)
 
     token = os.environ.get("TELEGRAM_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
 
-    # Só monta o relatorio/busca notícias se for enviar pro Telegram
-    if token and chat_id:
-        noticias = get_noticias()
-        man = get_manchetes_locais()
-
-        relatorio = f"""📊 <b>Relatorio Diario - {hoje}</b>
-
-<b>COTACOES:</b>
-- Ibovespa: {cot['ibovespa']}
-- Dolar: {cot['dolar']}
-- Euro: {cot['euro']}
-- Libra: {cot['libra']}
-- Ouro: {cot['ouro']}
-- Bitcoin: {cot['bitcoin']}
-
-<b>NOTICIAS DO DIA:</b>
-{chr(10).join(noticias)}
-
-<b>NOTICIAS LOCAIS (Sorocaba):</b>
-{chr(10).join(man)}
-
-Atualizado automaticamente."""
-
-        print(relatorio)
-
-        try:
-            requests.post(
-                f"https://api.telegram.org/bot{token}/sendMessage",
-                json={"chat_id": chat_id, "text": relatorio, "parse_mode": "HTML"},
-                timeout=15
-            )
-            print("Enviado para Telegram!")
-        except Exception as e:
-            print(f"Erro: {e}")
-    else:
-        print("Modo local (sem Telegram): cotacao gravada, noticias ignoradas.")
+    # Modo local (sem Telegram): apenas grava a cotação
+    if not token or not chat_id:
+        print("Modo local (sem Telegram): cotacao gravada.")

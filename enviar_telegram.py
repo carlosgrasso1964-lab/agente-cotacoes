@@ -1,55 +1,31 @@
 # -*- coding: utf-8 -*-
-"""Envia relatorio de cotacoes + noticias + graficos para o Telegram.
+"""Envia relatório de cotações + gráficos para o Telegram (sem notícias).
 
 O token e o chat_id vem das VARIÁVEIS DE AMBIENTE do Windows
-(TELEGRAM_TOKEN e TELEGRAM_CHAT_ID), nunca de arquivo.
+(TTK e TID), nunca de arquivo.
 
 Uso: python enviar_telegram.py
 """
 import os
 import requests
-from agente_cotacoes import get_cotacoes, get_noticias, get_manchetes_locais
+from agente_cotacoes import get_cotacoes
 
 PASTA_GRAFICOS = "graficos"
 
 
-def carregar_env():
-    """Le pares chave=valor do .env (ignorando comentarios)."""
-    env = {}
-    if not os.path.exists(ARQUIVO_ENV):
-        print("ERRO: arquivo .env nao encontrado.")
-        return env
-    with open(ARQUIVO_ENV, encoding="utf-8") as f:
-        for linha in f:
-            linha = linha.strip()
-            if not linha or linha.startswith("#") or "=" not in linha:
-                continue
-            k, v = linha.split("=", 1)
-            env[k.strip()] = v.strip()
-    return env
-
-
 def montar_relatorio(cot):
-    """Monta o texto do relatorio (como o original do Telegram)."""
+    """Monta o texto do relatório (apenas cotações)."""
     import datetime
     hoje = datetime.date.today().strftime("%d/%m/%Y")
-    noticias = get_noticias()
-    man = get_manchetes_locais()
-    relatorio = f"""📊 <b>Relatorio Diario - {hoje}</b>
+    relatorio = f"""📊 <b>Relatório de Cotações - {hoje}</b>
 
-<b>COTACOES:</b>
+<b>COTAÇÕES:</b>
 - Ibovespa: {cot['ibovespa']}
 - Dolar: {cot['dolar']}
 - Euro: {cot['euro']}
 - Libra: {cot['libra']}
 - Ouro: {cot['ouro']}
 - Bitcoin: {cot['bitcoin']}
-
-<b>NOTICIAS DO DIA:</b>
-{chr(10).join(noticias)}
-
-<b>NOTICIAS LOCAIS (Sorocaba):</b>
-{chr(10).join(man)}
 
 Atualizado automaticamente."""
     return relatorio
@@ -62,7 +38,7 @@ def enviar_texto(token, chat_id, texto):
         timeout=20,
     )
     if r.status_code == 200 and r.json().get("ok"):
-        print("  - Relatorio em texto enviado ✓")
+        print("  - Relatório em texto enviado ✓")
         return True
     print(f"  - Falha ao enviar texto: {r.json().get('description')}")
     return False
@@ -110,7 +86,7 @@ def main():
         print("ERRO: variavel ainda com placeholder (SEU_/nome). Atualize no Windows.")
         return 1
 
-    print("Buscando cotacoes e noticias...")
+    print("Buscando cotações...")
     cot, _ = get_cotacoes()
 
     print("Enviando para o Telegram:")
@@ -119,7 +95,7 @@ def main():
 
     print(f"\nResumo: texto={'OK' if ok_texto else 'FALHA'}, fotos enviadas={n_fotos}")
     if ok_texto and n_fotos > 0:
-        print("SUCESSO: relatorio + graficos enviados ao Telegram!")
+        print("SUCESSO: relatório + gráficos enviados ao Telegram!")
     else:
         print("AVISO: houve falha parcial; verifique acima.")
 

@@ -19,7 +19,7 @@ echo  [2/3] Gerando graficos de evolucao...
 python gerar_graficos.py
 
 echo.
-echo  [3/3] Enviando tudo para o Telegram...
+echo  [3/3] Enviando cotacoes + graficos para o Telegram...
 python enviar_telegram.py
 
 echo.
@@ -27,7 +27,7 @@ echo ============================================
 echo  Concluido!
 echo   - Planilha: cotacoes_historico.xlsx
 echo   - Graficos: graficos\*.png
-echo   - Telegram: relatorio + graficos
+echo   - Telegram: relatorio de cotacoes + graficos
 echo ============================================
 echo.
 pause
