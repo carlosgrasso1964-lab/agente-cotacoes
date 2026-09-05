@@ -74,16 +74,17 @@ def enviar_fotos(token, chat_id):
 
 
 def main():
-    # Valores vem das VARIÁVEIS DE AMBIENTE do Windows (nunca de arquivo).
-    # ESCOLHIDO: o Carlos definiu no Windows as variaveis TTK (token) e TID (chat_id).
-    token = os.environ.get("TTK", "")
-    chat_id = os.environ.get("TID", "")
+    # Token e chat_id vêm das variáveis de ambiente (nunca de arquivo).
+    # Prioridade: TELEGRAM_TOKEN / TELEGRAM_CHAT_ID (GitHub Actions secrets),
+    # fallback: TTK / TID (variáveis do Windows definidas pelo Carlos).
+    token = os.environ.get("TELEGRAM_TOKEN") or os.environ.get("TTK", "")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID") or os.environ.get("TID", "")
     if not token or not chat_id:
-        print("ERRO: variaveis TTK e/ou TID nao definidas no Windows.")
-        print("Defina-as: Painel de Controle > Sistema > Variaveis de Ambiente (usuario) e reinicie o terminal.")
+        print("ERRO: variaveis TELEGRAM_TOKEN/TELEGRAM_CHAT_ID (ou TTK/TID no Windows) nao definidas.")
+        print("No GitHub Actions defina os secrets; no Windows defina TTK/TID em Variaveis de Ambiente (usuario).")
         return 1
-    if "SEU_" in token or "SEU_" in chat_id or token == "TTK" or chat_id == "TID":
-        print("ERRO: variavel ainda com placeholder (SEU_/nome). Atualize no Windows.")
+    if "SEU_" in token or "SEU_" in chat_id or token in ("TTK", "TID"):
+        print("ERRO: variavel ainda com placeholder (SEU_/nome). Atualize.")
         return 1
 
     print("Buscando cotações...")
