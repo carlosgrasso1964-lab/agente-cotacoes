@@ -1,5 +1,7 @@
 # Dados gerados automaticamente (nao versionar)
-cotacoes_historico.xlsx
+# ATENCAO: cotacoes_historico.xlsx AGORA é versionado (necessário p/ persistir
+# o histórico entre execuções do GitHub Actions, senão gráficos saem vazios)
+# cotacoes_historico.xlsx
 graficos/
 
 # Python

@@ -8,8 +8,13 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          # Necessário para o auto-commit da planilha de histórico
+          persist-credentials: true
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
@@ -24,3 +29,14 @@ jobs:
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      - name: Commit updated spreadsheet
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cotacoes_historico.xlsx
+          if git diff --cached --quiet; then
+            echo "Sem mudanças na planilha (nada a commitar)."
+          else
+            git commit -m "chore: atualiza cotacoes_historico.xlsx [skip ci]"
+            git push
+          fi
