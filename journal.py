@@ -104,10 +104,16 @@ def get_locais():
 
 
 def main():
-    token = os.environ.get("TELEGRAM_TOKEN")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    # Prioridade: TELEGRAM_TOKEN / TELEGRAM_CHAT_ID (GitHub Actions secrets),
+    # fallback: TTK / TID (variáveis do Windows definidas pelo Carlos).
+    token = os.environ.get("TELEGRAM_TOKEN") or os.environ.get("TTK", "")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID") or os.environ.get("TID", "")
     if not token or not chat_id:
-        print("ERRO: variaveis TELEGRAM_TOKEN/TELEGRAM_CHAT_ID nao definidas.")
+        print("ERRO: variaveis TELEGRAM_TOKEN/TELEGRAM_CHAT_ID (ou TTK/TID no Windows) nao definidas.")
+        print("No GitHub Actions defina os secrets; no Windows defina TTK/TID em Variaveis de Ambiente (usuario).")
+        return 1
+    if "SEU_" in token or "SEU_" in chat_id or token in ("TTK", "TID"):
+        print("ERRO: variavel ainda com placeholder (SEU_/nome). Atualize.")
         return 1
 
     try:
@@ -116,18 +122,19 @@ def main():
         nacionais = get_nacionais()
         locais = get_locais()
 
-        # VERIFICAÇÃO DE FALHA TOTAL DOS FEEDS
+        # VERIFICACAO DE FALHA TOTAL DOS FEEDS
         if not internacionais and not nacionais and not locais:
-            print("ALERTA: Todas as fontes de notícias falharam.")
+            print("ALERTA: Todas as fontes de noticias falharam.")
             msg_alerta = (
-                "⚠️ <b>Alerta Journal Diário</b>\n\n"
-                "Não foi possível carregar nenhuma notícia no boletim de hoje. "
-                "Todas as fontes de RSS (G1, BBC, CNN, Google News) falharam ou timeout."
+            "⚠️ <b>Alerta Journal Diario</b>\n\n"
+            "Nao foi possivel carregar nenhuma noticia no boletim de hoje. "
+            "Todas as fontes de RSS (G1, BBC, CNN, Google News) falharam ou timeout."
             )
             enviar_mensagem_telegram(token, chat_id, msg_alerta, preview=False)
-            return 1
-
-        # Tratamento individual de seções vazias
+            print("Alerta enviado. Workflow termina com sucesso (nao falha o CI).")
+            return 0
+        
+        # Tratamento individual de secoes vazias
         list_inter = internacionais if internacionais else ["- <i>Nao foi possivel carregar noticias internacionais.</i>"]
         list_nac = nacionais if nacionais else ["- <i>Nao foi possivel carregar noticias nacionais.</i>"]
         list_loc = locais if locais else ["- <i>Nao foi possivel carregar noticias locais.</i>"]
