@@ -105,9 +105,22 @@ def get_locais():
 
 def main():
     # Prioridade: TELEGRAM_TOKEN / TELEGRAM_CHAT_ID (GitHub Actions secrets),
-    # fallback: TTK / TID (variáveis do Windows definidas pelo Carlos).
+    # fallback: TTK / TID (variaveis do Windows definidas pelo Carlos).
+    print(f"[DEBUG] TELEGRAM_TOKEN definido: {'TELEGRAM_TOKEN' in os.environ}")
+    print(f"[DEBUG] TELEGRAM_CHAT_ID definido: {'TELEGRAM_CHAT_ID' in os.environ}")
+    print(f"[DEBUG] TTK definido: {'TTK' in os.environ}")
+    print(f"[DEBUG] TID definido: {'TID' in os.environ}")
+    
     token = os.environ.get("TELEGRAM_TOKEN") or os.environ.get("TTK", "")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID") or os.environ.get("TID", "")
+    
+    print(f"[DEBUG] token length: {len(token)}")
+    print(f"[DEBUG] chat_id length: {len(chat_id)}")
+    if token:
+        print(f"[DEBUG] token prefix: {token[:10]}...")
+    if chat_id:
+        print(f"[DEBUG] chat_id: {chat_id}")
+    
     if not token or not chat_id:
         print("ERRO: variaveis TELEGRAM_TOKEN/TELEGRAM_CHAT_ID (ou TTK/TID no Windows) nao definidas.")
         print("No GitHub Actions defina os secrets; no Windows defina TTK/TID em Variaveis de Ambiente (usuario).")
@@ -117,10 +130,17 @@ def main():
         return 1
 
     try:
+        print("[DEBUG] Iniciando busca de noticias...")
         print("Buscando noticias para o Journal...")
+        print("[DEBUG] Chamando get_internacionais()...")
         internacionais = get_internacionais()
+        print(f"[DEBUG] Internacionais: {len(internacionais)} itens")
+        print("[DEBUG] Chamando get_nacionais()...")
         nacionais = get_nacionais()
+        print(f"[DEBUG] Nacionais: {len(nacionais)} itens")
+        print("[DEBUG] Chamando get_locais()...")
         locais = get_locais()
+        print(f"[DEBUG] Locais: {len(locais)} itens")
 
         # VERIFICACAO DE FALHA TOTAL DOS FEEDS
         if not internacionais and not nacionais and not locais:
