@@ -28,21 +28,23 @@ SESSION = criar_sessao()
 
 
 def enviar_mensagem_telegram(token, chat_id, texto, preview=True):
-    """Função genérica para envio de mensagens ao Telegram."""
+    """Funcao generica para envio de mensagens ao Telegram."""
     try:
         r = SESSION.post(
             f"https://api.telegram.org/bot{token}/sendMessage",
             json={
-                "chat_id": chat_id, 
-                "text": texto, 
+                "chat_id": chat_id,
+                "text": texto,
                 "parse_mode": "HTML",
                 "disable_web_page_preview": not preview
             },
             timeout=20,
         )
+        print(f"[DEBUG] Telegram API status: {r.status_code}")
+        print(f"[DEBUG] Telegram API response: {r.text}")
         return r.status_code == 200 and r.json().get("ok")
     except Exception as e:
-        print(f"Erro ao conectar com API do Telegram: {e}")
+        print(f"[DEBUG] Erro ao conectar com API do Telegram: {e}")
         return False
 
 
